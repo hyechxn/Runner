@@ -9,6 +9,8 @@ public class TouchDrag : MonoBehaviour
     private Vector2 nowPos, prePos;
     private Vector2 movePos;
 
+    private bool isJump = false;
+
     public Transform player;
 
     public TextMeshProUGUI text1;
@@ -48,7 +50,7 @@ public class TouchDrag : MonoBehaviour
                 prePos = touch.position - touch.deltaPosition;
             }
 
-            if (touch.deltaPosition.y > 100)
+            if (!isJump)
             {
                 Jump();
                 touch.deltaPosition = Vector2.zero;
@@ -58,6 +60,8 @@ public class TouchDrag : MonoBehaviour
                 StartCoroutine(Slam());
                 touch.deltaPosition = Vector2.zero;
             }
+
+
         }
 
 
@@ -79,7 +83,9 @@ public class TouchDrag : MonoBehaviour
 
     void Jump()
     {
+        isJump = true;
         rigid.AddForce(Vector3.up * 10, ForceMode.Impulse);
+        rigid.velocity = transform.forward * 8;
         Debug.Log("Á¡ÇÁ");
     }
 
@@ -92,4 +98,11 @@ public class TouchDrag : MonoBehaviour
         Debug.Log("³»·Á°«");
     }
 
+    private void OnCollisionEnter(Collision collision)
+    {
+        if(collision.gameObject.tag == "Ground")
+        {
+            isJump = false;
+        }
+    }
 }
