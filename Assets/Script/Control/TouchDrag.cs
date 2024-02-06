@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 
@@ -9,7 +8,7 @@ public class TouchDrag : MonoBehaviour
     private Vector2 nowPos, prePos;
     private Vector2 movePos;
 
-    private bool isJump = false;
+    public bool isJump = false;
 
     public Transform player;
 
@@ -20,6 +19,9 @@ public class TouchDrag : MonoBehaviour
 
     Rigidbody rigid;
     public Animator anim;
+    public bool isRotate;
+    public float rotationSpeed;
+
     private void Awake()
     {
         rigid = player.GetComponent<Rigidbody>();
@@ -34,7 +36,17 @@ public class TouchDrag : MonoBehaviour
         text3.text = "nowPos : " + nowPos;
         if (Input.touchCount == 1)
         {
-           
+            Touch touch = Input.GetTouch(0);
+
+            if (touch.phase == TouchPhase.Began)
+            {
+                prePos = touch.position - touch.deltaPosition;
+            }
+            else if (touch.phase == TouchPhase.Moved)
+            {
+                nowPos = touch.position - touch.deltaPosition;
+                prePos = touch.position - touch.deltaPosition;
+            }
         }
         else if (Input.touchCount == 2)
         {
@@ -50,48 +62,69 @@ public class TouchDrag : MonoBehaviour
                 prePos = touch.position - touch.deltaPosition;
             }
 
-            if (!isJump)
+            if (!isJump && touch.deltaPosition.y > 100)
             {
                 Jump();
-                touch.deltaPosition = Vector2.zero;
             }
             if (touch.deltaPosition.y < -100)
             {
                 StartCoroutine(Slam());
-                touch.deltaPosition = Vector2.zero;
+            }
+            if (!isRotate)
+            {
+                if (touch.deltaPosition.x > 100)
+                {
+                    Debug.Log("오른쪽");
+                    Quaternion targetRotation = player.rotation * Quaternion.Euler(0, 90f, 0);
+                    player.rotation = Quaternion.Lerp(player.rotation, targetRotation, Time.deltaTime * rotationSpeed);
+                    isRotate = true;
+                }
+
+                else if (touch.deltaPosition.x < -100)
+                {
+                    Debug.Log("왼쪽");
+                    Quaternion targetRotation = player.rotation * Quaternion.Euler(0, -90f, 0);
+                    player.rotation = Quaternion.Lerp(player.rotation, targetRotation, Time.deltaTime * rotationSpeed);
+                    isRotate = true;
+                }
             }
 
 
+
+
+
         }
-
-
         else if (Input.touchCount == 3)
         {
             anim.SetBool("IsRun", false);
-            rigid.velocity = Vector2.zero;
-            rigid.velocity = player.forward * 5;
+            transform.position += player.forward * 5 * Time.deltaTime;
         }
         else if (Input.touchCount == 4)
         {
-            rigid.velocity = player.forward * 20;
+            transform.position += player.forward * 20 * Time.deltaTime;
             anim.SetBool("IsRun", true);
 
         }
-        else if(Input.touchCount == 5)
-            rigid.velocity = player.right * 200;
+        else if (Input.touchCount == 5)
+            transform.position += player.forward * 200 * Time.deltaTime;
+        if (Input.touchCount != 2)
+        {
+            isRotate = false;
+        }
+
+
     }
 
     void Jump()
     {
         isJump = true;
         rigid.AddForce(Vector3.up * 10, ForceMode.Impulse);
-        rigid.velocity = player.forward * 8;
+        transform.position += player.forward * 8 * Time.deltaTime;
         Debug.Log("점프");
     }
 
     IEnumerator Slam()
     {
-        rigid.velocity = Vector3.zero;
         rigid.AddForce(Vector3.down * 100, ForceMode.Impulse);
         yield return new WaitForSeconds(0.3f);
         rigid.velocity = Vector3.zero;
@@ -100,7 +133,7 @@ public class TouchDrag : MonoBehaviour
 
     private void OnCollisionEnter(Collision collision)
     {
-        if(collision.gameObject.tag == "Ground")
+        if (collision.gameObject.tag == "Ground")
         {
             isJump = false;
         }
